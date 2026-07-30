@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VideoClipper - AI Auto Short Clip</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-slate-900 text-white min-h-screen flex flex-col items-center justify-center p-4">
+
+    <div class="max-w-xl w-full bg-slate-800 rounded-2xl shadow-2xl border border-slate-700 p-6 md:p-8">
+        
+        <div class="text-center mb-8">
+            <h1 class="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-600 mb-2">
+                <i class="fa-solid fa-scissors mr-2"></i>VideoClipper
+            </h1>
+            <p class="text-slate-400 text-sm">Potong klip video YouTube secara otomatis & cepat</p>
+        </div>
+
+        <div class="space-y-4">
+            <div>
+                <label class="block text-xs font-semibold uppercase text-slate-400 mb-1">URL YouTube</label>
+                <input type="url" id="youtubeUrl" placeholder="https://www.youtube.com/watch?v=..." 
+                       class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 focus:outline-none focus:border-purple-500 text-sm">
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-semibold uppercase text-slate-400 mb-1">Mulai (Detik)</label>
+                    <input type="number" id="startTime" value="10" min="0" 
+                           class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 focus:outline-none focus:border-purple-500 text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold uppercase text-slate-400 mb-1">Selesai (Detik)</label>
+                    <input type="number" id="endTime" value="40" min="1" 
+                           class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 focus:outline-none focus:border-purple-500 text-sm">
+                </div>
+            </div>
+
+            <button onclick="processVideo()" id="btnProcess" 
+                    class="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 font-bold py-3 rounded-xl shadow-lg transition duration-200 text-sm flex items-center justify-center gap-2">
+                <i class="fa-solid fa-wand-magic-sparkles"></i> Potong Video Sekarang
+            </button>
+        </div>
+
+        <div id="loading" class="hidden mt-6 text-center">
+            <div class="inline-block animate-spin rounded-full h-8 w-8 border-4 border-purple-500 border-t-transparent"></div>
+            <p class="text-sm text-slate-400 mt-2">Sedang mengunduh & memotong video...</p>
+        </div>
+
+        <div id="resultBox" class="hidden mt-8 border-t border-slate-700 pt-6">
+            <h3 class="text-sm font-semibold text-slate-300 mb-3"><i class="fa-solid fa-circle-check text-green-400 mr-2"></i>Hasil Potongan Video:</h3>
+            <video id="videoPlayer" controls class="w-full rounded-xl bg-black mb-4 max-h-80 object-contain"></video>
+            <a id="downloadBtn" href="#" download class="block text-center w-full bg-slate-700 hover:bg-slate-600 font-semibold py-2.5 rounded-xl text-sm transition duration-200">
+                <i class="fa-solid fa-download mr-1"></i> Unduh Klip Video
+            </a>
+        </div>
+
+    </div>
+
+    <script>
+        async function processVideo() {
+            const url = document.getElementById('youtubeUrl').value;
+            const start = document.getElementById('startTime').value;
+            const end = document.getElementById('endTime').value;
+            
+            if(!url) {
+                alert('Silakan masukkan URL YouTube!');
+                return;
+            }
+
+            document.getElementById('loading').classList.remove('hidden');
+            document.getElementById('resultBox').classList.add('hidden');
+            document.getElementById('btnProcess').disabled = true;
+
+            try {
+                const response = await fetch('/process', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        url: url, 
+                        start_time: parseInt(start), 
+                        end_time: parseInt(end) 
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.status === 'success') {
+                    const videoPlayer = document.getElementById('videoPlayer');
+                    const downloadBtn = document.getElementById('downloadBtn');
+                    
+                    videoPlayer.src = data.file_url;
+                    downloadBtn.href = data.file_url;
+                    
+                    document.getElementById('resultBox').classList.remove('hidden');
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            } catch (err) {
+                alert('Terjadi kesalahan koneksi server.');
+            } finally {
+                document.getElementById('loading').classList.add('hidden');
+                document.getElementById('btnProcess').disabled = false;
+            }
+        }
+    </script>
+</body>
+</html>
